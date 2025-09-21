@@ -4,7 +4,8 @@ import { Greet } from '../../wailsjs/go/main/App'
 import { OfficesList } from '../../wailsjs/go/main/App'
 import { Prints } from '../../wailsjs/go/main/App'
 import { Printm } from '../../wailsjs/go/main/App'
-const delivery = ref("pvz");
+const deliveryfrom = ref("pvz");
+const deliveryto = ref("pvz");
 const poluchatel=ref("yurik");
 const data = reactive({
   inn:"",
@@ -143,39 +144,8 @@ function selectOffice(office) {
       </div>
       </div>
 
-<label-group class="radio-group">
-  <label>
-    <input type="radio" value="pvz" v-model="delivery" />
-    До ПВЗ
-  </label>
-  <label>
-    <input type="radio" value="cour" v-model="delivery" />
-    До двери
-  </label>
-</label-group>
 
 
-      <!-- выбор офиса -->
-      <div class="field">  
-      <input
-        v-model="data.offices"
-        autocomplete="off"
-        class="input"
-        type="text"
-         :placeholder="delivery === 'pvz' ? 'Введите адрес ПВЗ...' : 'Введите адрес для доставки курьером...'"
-      />
-
-      <div v-if="delivery === 'pvz' && data.officesResults.length" class="dropdown">
-        <ul>
-          <li
-            v-for="office in data.officesResults"
-            :key="office.uuid"
-            @click="selectOffice(office)"
-          >
-            {{ office.location.address_full }}
-          </li>
-        </ul>
-      </div>
       </div>
 
 <label-group class="radio-poluchatel">
@@ -189,7 +159,7 @@ function selectOffice(office) {
   </label>
 </label-group>
 
-
+      <div class="tempinput">
       <input
       v-if="poluchatel ==='yurik'"
         v-model="data.inn"
@@ -212,6 +182,7 @@ function selectOffice(office) {
         type="text"
         placeholder="Введите контактный телефон..."
       />
+      </div>
 
   <div class="wrapper">
     <!-- Список элементов -->
@@ -233,6 +204,70 @@ function selectOffice(office) {
       <input v-model="selectedItem.sku" type="text" placeholder="Артикул" />
     </div>
   </div>
+
+<label-group class="radio-from">
+  <label>
+    <input type="radio" value="pvz" v-model="deliveryfrom" />
+    От ПВЗ
+  </label>
+  <label>
+    <input type="radio" value="cour" v-model="deliveryfrom" />
+    От двери
+  </label>
+</label-group>
+
+<label-group class="radio-from">
+  <label>
+    <input type="radio" value="pvz" v-model="deliveryto" />
+    До ПВЗ
+  </label>
+  <label>
+    <input type="radio" value="cour" v-model="deliveryto" />
+    До двери
+  </label>
+</label-group>
+      <!-- выбор офиса -->
+      <div class="field"> 
+        
+                    <input
+        v-if="deliveryfrom ==='cour'" 
+        v-model="data.offices"
+        autocomplete="off"
+        class="input"
+        type="text"
+         placeholder="Введите адрес забора груза отправителя"
+      />
+
+
+      <input
+        v-if="deliveryto ==='pvz'" 
+        v-model="data.offices"
+        autocomplete="off"
+        class="input"
+        type="text"
+         placeholder="Введите адрес ПВЗ получателя"
+      />
+
+      <div v-if="data.officesResults.length" class="dropdown">
+        <ul>
+          <li
+            v-for="office in data.officesResults"
+            :key="office.uuid"
+            @click="selectOffice(office)"
+          >
+            {{ office.location.address_full }}
+          </li>
+        </ul>
+      </div>
+
+                  <input
+        v-if="deliveryto ==='cour'" 
+        v-model="data.offices"
+        autocomplete="off"
+        class="input"
+        type="text"
+         placeholder="Введите адрес доставки груза получателя"
+      />
 
 
 
@@ -260,6 +295,14 @@ function selectOffice(office) {
   margin: 5px 5px;
 }
 
+.tempinput {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 500px;
+
+}
+
 .input-wrapper .input {
   height: 30px;
   padding: 0 10px;
@@ -269,14 +312,14 @@ function selectOffice(office) {
   font-size: 14px;
   margin-bottom: 5px;
 }
-.radio-group {
+.radio-from {
   display: flex;        /* выстраиваем в одну линию */
   gap: 1rem;            /* расстояние между кнопками */
   margin: 5px 0;        /* небольшой отступ сверху/снизу */
   align-items: center;  /* выравниваем по вертикали */
 }
 
-.radio-group label {
+.radio-from label {
   cursor: pointer;
 }
 .radio-poluchatel {
