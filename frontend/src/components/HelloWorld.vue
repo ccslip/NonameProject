@@ -1,11 +1,15 @@
 <script setup>
-import { reactive, watch } from 'vue'
+import { reactive, watch,ref } from 'vue'
 import { Greet } from '../../wailsjs/go/main/App'
 import { OfficesList } from '../../wailsjs/go/main/App'
 import { Prints } from '../../wailsjs/go/main/App'
 import { Printm } from '../../wailsjs/go/main/App'
-
+const delivery = ref("pvz");
+const poluchatel=ref("yurik");
 const data = reactive({
+  inn:"",
+  phone:"",
+  fio:"",
   name: "",         // значение input
   offices:"",
   results: [],    // список городов
@@ -14,8 +18,18 @@ const data = reactive({
   officess: [], // список полученных офисов в городе
   selectedOffice: null, // объект выбранного офиса
   officesResults: [],   // список офисов
-  //resultText: "Please enter your city below 👇"
 })
+const items = ref([
+  { name: "Товар 1", price: 100, sku: "A001" },
+  { name: "Товар 2", price: 200, sku: "A002" },
+  { name: "Товар 3", price: 300, sku: "A003" }
+])
+
+const selectedItem = ref(null)
+
+function selectItem1(item) {
+  selectedItem.value = item
+}
 
 let debounceTimeout = null
 
@@ -107,6 +121,7 @@ function selectOffice(office) {
     -->
     <div class="input-wrapper">
       <!-- выбор города -->
+      <div class="field"> 
       <input
         v-model="data.name"
         autocomplete="off"
@@ -126,17 +141,31 @@ function selectOffice(office) {
           </li>
         </ul>
       </div>
+      </div>
+
+<label-group class="radio-group">
+  <label>
+    <input type="radio" value="pvz" v-model="delivery" />
+    До ПВЗ
+  </label>
+  <label>
+    <input type="radio" value="cour" v-model="delivery" />
+    До двери
+  </label>
+</label-group>
+
 
       <!-- выбор офиса -->
+      <div class="field">  
       <input
         v-model="data.offices"
         autocomplete="off"
         class="input"
         type="text"
-        placeholder="Введите адрес офиса..."
+         :placeholder="delivery === 'pvz' ? 'Введите адрес ПВЗ...' : 'Введите адрес для доставки курьером...'"
       />
 
-      <div v-if="data.officesResults.length" class="dropdown">
+      <div v-if="delivery === 'pvz' && data.officesResults.length" class="dropdown">
         <ul>
           <li
             v-for="office in data.officesResults"
@@ -147,23 +176,88 @@ function selectOffice(office) {
           </li>
         </ul>
       </div>
+      </div>
+
+<label-group class="radio-poluchatel">
+  <label>
+    <input type="radio" value="yurik" v-model="poluchatel" />
+    Юридическое лицо
+  </label>
+  <label>
+    <input type="radio" value="fizik" v-model="poluchatel" />
+    Физическое лицо
+  </label>
+</label-group>
+
+
+      <input
+      v-if="poluchatel ==='yurik'"
+        v-model="data.inn"
+        autocomplete="off"
+        class="input"
+        type="text"
+        placeholder="Введите ИНН организации..."
+      />
+      <input
+        v-model="data.fio"
+        autocomplete="off"
+        class="input"
+        type="text"
+        placeholder="Введите ФИО..."
+      />
+      <input
+        v-model="data.phone"
+        autocomplete="off"
+        class="input"
+        type="text"
+        placeholder="Введите контактный телефон..."
+      />
+
+  <div class="wrapper">
+    <!-- Список элементов -->
+    <div class="items-box">
+      <div
+        v-for="(item, index) in items"
+        :key="index"
+        class="item"
+        @click="selectItem1(item)"
+      >
+        {{ item.name }}
+      </div>
+    </div>
+
+    <!-- Редактируемые поля -->
+    <div class="inputs-box" v-if="selectedItem">
+      <input v-model="selectedItem.name" type="text" placeholder="Название товара" />
+      <input v-model="selectedItem.price" type="number" placeholder="Цена" />
+      <input v-model="selectedItem.sku" type="text" placeholder="Артикул" />
+    </div>
+  </div>
+
+
+
     </div>
   </main>
 </template>
 
 <style scoped>
-.result {
-  height: 30px;
-  line-height: 30px;
-  margin: 1.5rem auto;
+
+.field {
+  position: relative; 
+  display: flex;
+  flex-direction: column;
+  width: 500px;
+  margin: 5px 5px;
+
 }
+
 
 .input-wrapper {
   position: relative;
   display: flex;
   flex-direction: column;
   width: 500px;
-  margin: 0 auto;
+  margin: 5px 5px;
 }
 
 .input-wrapper .input {
@@ -175,14 +269,26 @@ function selectOffice(office) {
   font-size: 14px;
   margin-bottom: 5px;
 }
+.radio-group {
+  display: flex;        /* выстраиваем в одну линию */
+  gap: 1rem;            /* расстояние между кнопками */
+  margin: 5px 0;        /* небольшой отступ сверху/снизу */
+  align-items: center;  /* выравниваем по вертикали */
+}
 
-.input-wrapper .btn {
-  margin-top: 5px;
-  height: 30px;
-  border-radius: 3px;
-  border: none;
+.radio-group label {
   cursor: pointer;
 }
+.radio-poluchatel {
+  display: flex;        /* выстраиваем в одну линию */
+  gap: 1rem;            /* расстояние между кнопками */
+  margin: 20px 0;        /* небольшой отступ сверху/снизу */
+  align-items: center;  /* выравниваем по вертикали */
+}
+.radio-poluchatel label {
+  cursor: pointer;
+}
+
 
 .dropdown {
   position: absolute;
@@ -214,4 +320,45 @@ function selectOffice(office) {
   background: #f0f0f0;
    color: black;
 }
+.wrapper {
+  display: flex;
+  gap: 20px; /* расстояние между колонками */
+}
+
+.items-box {
+  width: 200px;
+  height: 200px;
+  border: 1px solid #ccc;
+  overflow-y: auto;
+  padding: 10px;
+  background: #fafafa;
+}
+
+.item {
+  padding: 5px;
+  margin-bottom: 5px;
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.item:hover {
+  background: #eaeaea;
+}
+
+.inputs-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.inputs-box input {
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+
+
+
 </style>
