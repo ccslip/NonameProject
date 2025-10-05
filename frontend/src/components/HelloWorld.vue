@@ -8,9 +8,9 @@ const deliveryfrom = ref("pvz");
 const deliveryto = ref("pvz");
 const poluchatel=ref("yurik");
 const data = reactive({
+number:0,
   inn:"",
   phone:"",
-  fio:"",
   name: "",         // значение input
   offices:"",
   results: [],    // список городов
@@ -25,8 +25,9 @@ const items = ref([
   { name: "Товар 2", price: 200, sku: "A002" },
   { name: "Товар 3", price: 300, sku: "A003" }
 ])
-
+const isDisabled = ref(true)
 const selectedItem = ref(null)
+const fio = ref('')
 
 function selectItem1(item) {
   selectedItem.value = item
@@ -114,16 +115,51 @@ function selectOffice(office) {
   data.officesResults = []     // закрыть список офисов
 }
 
+async function onClick(number) {
+  try {
+    const res = await Prints(number)
+    fio.value =  JSON.stringify(res.recipient.name)
+    
+  } catch (err) {
+    console.error('Ошибка при получении данных:', err)
+  }
+  
+}
 </script>
 <template>
   <main>
     <!--
     <div id="result" class="result">{{ data.resultText }}</div>
     -->
+
     <div class="input-wrapper">
+<div class="zakazload">
+  <input
+   
+  v-model.number="data.number"
+  class="input"
+  type="text"
+  placeholder="Введите номер заказа..."
+  />
+
+  <button
+    :class="computedClass"
+    :type="type"
+    :disabled="disabled"
+    @click="onClick(data.number)"
+  >
+    <slot>Загрузить данные...</slot> <!-- Содержимое кнопки передаётся через слот -->
+  </button>
+
+  </div>
+
+
+
+
       <!-- выбор города -->
       <div class="field"> 
       <input
+        :disabled="isDisabled"
         v-model="data.name"
         autocomplete="off"
         class="input"
@@ -131,7 +167,7 @@ function selectOffice(office) {
         placeholder="Введите название города..."
       />
 
-      <div v-if="data.results.length" class="dropdown">
+      <div v-if="data.results.length & !isDisabled" class="dropdown">
         <ul>
           <li
             v-for="item in data.results"
@@ -169,7 +205,7 @@ function selectOffice(office) {
         placeholder="Введите ИНН организации..."
       />
       <input
-        v-model="data.fio"
+        v-model="fio"
         autocomplete="off"
         class="input"
         type="text"
@@ -276,6 +312,15 @@ function selectOffice(office) {
 </template>
 
 <style scoped>
+
+.button {
+  font-size: 15px;
+  padding: 8px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
 
 .field {
   position: relative; 

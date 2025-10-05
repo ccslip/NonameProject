@@ -24,13 +24,13 @@ export namespace main {
 	    region: string;
 	    city_code: number;
 	    city: string;
-	    fias_guid: number[];
+	    fias_guid: string;
 	    postal_code: string;
 	    longitude: number;
 	    latitude: number;
 	    address: string;
 	    address_full: string;
-	    city_uuid: number[];
+	    city_uuid: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Location(source);
@@ -98,47 +98,11 @@ export namespace main {
 	        this.depth = source["depth"];
 	    }
 	}
-	export class Timeend {
-	    hour: number;
-	    minute: number;
-	    second: number;
-	    nano: number;
-	
-	    static createFrom(source: any = {}) {
-	        return new Timeend(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.hour = source["hour"];
-	        this.minute = source["minute"];
-	        this.second = source["second"];
-	        this.nano = source["nano"];
-	    }
-	}
-	export class Timestart {
-	    hour: number;
-	    minute: number;
-	    second: number;
-	    nano: number;
-	
-	    static createFrom(source: any = {}) {
-	        return new Timestart(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.hour = source["hour"];
-	        this.minute = source["minute"];
-	        this.second = source["second"];
-	        this.nano = source["nano"];
-	    }
-	}
 	export class Worktimeexception {
 	    date_start: string;
 	    date_end: string;
-	    time_start: Timestart;
-	    time_end: Timeend;
+	    time_start: string;
+	    time_end: string;
 	    is_working: boolean;
 	
 	    static createFrom(source: any = {}) {
@@ -149,28 +113,10 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.date_start = source["date_start"];
 	        this.date_end = source["date_end"];
-	        this.time_start = this.convertValues(source["time_start"], Timestart);
-	        this.time_end = this.convertValues(source["time_end"], Timeend);
+	        this.time_start = source["time_start"];
+	        this.time_end = source["time_end"];
 	        this.is_working = source["is_working"];
 	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
 	}
 	export class Worktime {
 	    day: number;
@@ -216,8 +162,6 @@ export namespace main {
 	}
 	export class Deliverypoints {
 	    code: string;
-	    address: string;
-	    name: string;
 	    uuid: string;
 	    address_comment: string;
 	    nearest_station: string;
@@ -258,8 +202,6 @@ export namespace main {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.code = source["code"];
-	        this.address = source["address"];
-	        this.name = source["name"];
 	        this.uuid = source["uuid"];
 	        this.address_comment = source["address_comment"];
 	        this.nearest_station = source["nearest_station"];
@@ -312,8 +254,6 @@ export namespace main {
 		    return a;
 		}
 	}
-	
-	
 	
 	
 	
