@@ -6,14 +6,14 @@ export function Greet(arg1) {
   return window['go']['main']['App']['Greet'](arg1);
 }
 
+export function LoadZakaz(arg1) {
+  return window['go']['main']['App']['LoadZakaz'](arg1);
+}
+
 export function OfficesList(arg1) {
   return window['go']['main']['App']['OfficesList'](arg1);
 }
 
 export function Printm(arg1) {
   return window['go']['main']['App']['Printm'](arg1);
-}
-
-export function Prints(arg1) {
-  return window['go']['main']['App']['Prints'](arg1);
 }

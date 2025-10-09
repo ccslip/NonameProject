@@ -4,8 +4,8 @@ import {main} from '../models';
 
 export function Greet(arg1:string):Promise<Array<main.CityAutocomplete>>;
 
+export function LoadZakaz(arg1:number):Promise<any>;
+
 export function OfficesList(arg1:string):Promise<Array<main.Deliverypoints>>;
 
 export function Printm(arg1:main.Deliverypoints):Promise<void>;
-
-export function Prints(arg1:number):Promise<any>;

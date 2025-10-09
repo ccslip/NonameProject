@@ -45,13 +45,13 @@ func saveToken(filename string, token *Token) error {
 
 func requestNewToken() (*Token, error) {
 	var resptoken token
-	baseURL := "http://api.edu.cdek.ru/v2/oauth/token"
+	baseURL := cdekurl + "/v2/oauth/token"
 
 	// Добавляем query параметры
 	params := url.Values{}
 	params.Add("grant_type", "client_credentials")
-	params.Add("client_id", "wqGwiQx0gg8mLtiEKsUinjVSICCjtTEP")
-	params.Add("client_secret", "RmAmgvSgSl1yirlz9QupbzOJVqhCxcP5")
+	params.Add("client_id", account)
+	params.Add("client_secret", secure)
 
 	fullURL := baseURL + "?" + params.Encode()
 
@@ -134,7 +134,7 @@ func GetPurchaseDB(number int64, db *sql.DB) ([]Item, PackageReq) { //получ
 	var Items []Item
 	var mass float64
 	var size int64
-	rows, err := db.Query(`SELECT p_id,name,count,options FROM rcserver_cityrton2_iY56x1_shopkeeper3_purchases WHERE order_id=?`, number)
+	rows, err := db.Query(`SELECT p_id,name,count,options FROM rcserver_cityrton2.iY56x1_shopkeeper3_purchases WHERE order_id=?`, number)
 	if err != nil {
 		log.Fatal("Ошибка запроса:", err)
 	}
@@ -243,9 +243,9 @@ func GetOrderDB(number int64, db *sql.DB) (Recipient, string, string, string) {
 	var phone PhoneDto
 	var index string
 	var deliveryddress string
-	row := db.QueryRow(`SELECT contacts,options,email FROM rcserver_cityrton2_iY56x1_shopkeeper3_orders WHERE id=?`, number)
+	row := db.QueryRow(`SELECT contacts,options,email FROM rcserver_cityrton2.iY56x1_shopkeeper3_orders WHERE id=?`, number)
 	row.Scan(&contacts, &options, &email)
-
+	//fmt.Println(number)
 	err := json.Unmarshal([]byte(contacts), &field)
 	if err != nil {
 		fmt.Println("Ошибка парсинга поля contacts")
@@ -380,7 +380,7 @@ func RequestTariffList(codetolocation int32, contragenttype string, ves PackageR
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(string(body))
+	//fmt.Println(string(body))
 	var tar TariffList
 	err = json.Unmarshal([]byte(body), &tar)
 	if err != nil {
@@ -395,7 +395,7 @@ func RequestTariffList(codetolocation int32, contragenttype string, ves PackageR
 	return tar
 }
 
-func GetCityIndex(name string) int32 { //получение кода города по индексу
+func GetCityIndex(name string) City { //получение кода города по индексу
 	//fmt.Println("ВЫЗОВ ИЗ GO", name)
 	token := tokens()
 	params := url.Values{}
@@ -426,10 +426,10 @@ func GetCityIndex(name string) int32 { //получение кода город�
 		panic(err)
 	}
 	if len(city) != 0 {
-		return city[0].Code
+		return city[0]
 	} else {
 		fmt.Println("Город не найден")
-		return 0
+		return City{}
 	}
 	//fmt.Println(city[0].Code)
 	//return []string{"Москва", "Санкт-Петербург"}
@@ -506,58 +506,14 @@ func MinTariffSkladSklad(a TariffList) TariffCode {
 	return tar
 }
 
-func Zakaz(number int64, db *sql.DB) interface{} {
+func Zakaz(number int64, db *sql.DB) ZakazDTO {
+	var zakaz ZakazDTO
 	var mesto Packages
 	recip, fullad, cdekad, index := GetOrderDB(number, db)
 	item, korob := GetPurchaseDB(number, db)
-	citycode := GetCityIndex(index)
-	officelist := OfficesList(strconv.Itoa(int(citycode)), "", "")
-	xx := RequestTariffList(citycode, recip.ContragentType, korob)
-	fmt.Println(xx)
-	if len(officelist) != 0 {
-		for x, _ := range officelist {
-			if strings.Contains(officelist[x].Location.Address, cdekad) {
-				var zakaz SkladSklad
-				//var mesto Packages
-				//fmt.Println(xx)
-				//fmt.Println("СКЛАД-СКЛАД")
-				//fmt.Println(MinTariffSkladSklad(xx).TariffCode)
-				zakaz.Number = strconv.Itoa(int(number))
-				//zakaz.ShipmentPoint = "SPB55"
-				zakaz.ShipmentPoint = "SPB261" //Энергетиков 8, к1, только в боевом листе
-				zakaz.DeliveryPoint = officelist[x].Code
-				zakaz.OfficeList = officelist
-				zakaz.TariffCode = int32(MinTariffSkladSklad(xx).TariffCode)
-				zakaz.TariffList = xx
-				zakaz.Recipient = recip
-				zakaz.Type = 1
-				mesto.Weight = korob.Weight
-				mesto.Height = korob.Height
-				mesto.Length = korob.Length
-				mesto.Width = korob.Width
-				mesto.Number = "1"
-				mesto.Items = append(mesto.Items, item...)
-				zakaz.Packages = append(zakaz.Packages, mesto)
-				zakaz.Print = "BARCODE"
-				return zakaz
-				//fmt.Println(MinTariffSkladSklad(xx))
-			}
-		}
-	}
-	var zakaz SkladDver
-	//var mesto Packages
-	//fmt.Println("СКЛАД-ДВЕРЬ")
-	//fmt.Println(xx)
-	//fmt.Println(MinTariffSkladDver(xx).TariffCode)
-
-	zakaz.Number = strconv.Itoa(int(number))
-	//zakaz.ShipmentPoint = "SPB55"
-	zakaz.ShipmentPoint = "SPB261"
-	zakaz.ToLocation.Address = fullad
-	zakaz.ToLocation.Code = citycode
-	zakaz.OfficeList = officelist
-	zakaz.TariffCode = int32(MinTariffSkladDver(xx).TariffCode)
-	zakaz.TariffList = xx
+	city := GetCityIndex(index)
+	officelist := OfficesList(strconv.Itoa(int(city.Code)), "", "")
+	xx := RequestTariffList(city.Code, recip.ContragentType, korob)
 	zakaz.Recipient = recip
 	zakaz.Type = 1
 	mesto.Weight = korob.Weight
@@ -568,43 +524,34 @@ func Zakaz(number int64, db *sql.DB) interface{} {
 	mesto.Items = append(mesto.Items, item...)
 	zakaz.Packages = append(zakaz.Packages, mesto)
 	zakaz.Print = "BARCODE"
-	return zakaz
-	//zakaz.Type = 1
-	//zakaz.Number = strconv.Itoa(int(number))
-	//zakaz.TariffCode = 482
-
-	//zakaz.ShipmentPoint = "SPB261"
-	//zakaz.DeliveryPoint = "ZHLD4"
-	//mesto.Weight = int32(korob.Weight)
-	//mesto.Height = korob.Height
-	//mesto.Length = korob.Length
-	//mesto.Width = korob.Width
-	//mesto.Number = "1"
-	//mesto.Items = append(mesto.Items, item...)
-	//zakaz.Packages = append(zakaz.Packages, mesto)
-	//zakaz.Print = "BARCODE"
-
-	//zakaz.ToLocation.Code = citycode
-	//zakaz.ToLocation.Address = cdekaddr
-
-	//xx := RequestTariffList(citycode, recip.ContragentType, korob)
-	//fmt.Println(zakaz.ToLocation)
-
-	//for x1, _ := range xx.TariffCodes {
-	//	fmt.Println(xx.TariffCodes[x1].TariffName, xx.TariffCodes[x1].TariffCode)
-	//}
-	/*
-		if len(officelist) != 0 {
-			for x, _ := range officelist {
-				if strings.Contains(officelist[x].Location.Address, cdekaddr) {
-					fmt.Println(MinTariffSkladSklad(xx))
-				}
+	zakaz.City = city
+	zakaz.OfficeList = officelist
+	zakaz.TariffList = xx
+	//fmt.Println(xx)
+	if len(officelist) != 0 {
+		for x, _ := range officelist {
+			if strings.Contains(officelist[x].Location.Address, cdekad) {
+				zakaz.Number = strconv.Itoa(int(number))
+				//zakaz.ShipmentPoint = "SPB55"
+				zakaz.ShipmentPoint = "SPB261" //Энергетиков 8, к1, только в боевом листе
+				zakaz.DeliveryPoint = officelist[x].Code
+				zakaz.TariffCode = int32(MinTariffSkladSklad(xx).TariffCode)
+				//fmt.Println(zakaz.OfficeList)
+				return zakaz
 			}
 		}
-	*/
+	}
+
+	zakaz.Number = strconv.Itoa(int(number))
+	//zakaz.ShipmentPoint = "SPB55"
+	zakaz.ShipmentPoint = "SPB261"
+	zakaz.ToLocation.Address = fullad
+	zakaz.ToLocation.Code = city.Code
+	zakaz.TariffCode = int32(MinTariffSkladDver(xx).TariffCode)
+	return zakaz
 }
 
-func SendZakaz(zakaz interface{}) RootEntityDto {
+func SendZakaz(zakaz ZakazDTO) RootEntityDto {
 	token := tokens()
 	fullURL := cdekurl + "/v2/orders"
 	jsonData, err := json.Marshal(zakaz)
@@ -712,7 +659,7 @@ func (a *App) Greet(name string) []CityAutocomplete {
 	params := url.Values{}
 	params.Add("name", name)
 	params.Add("country_code", "RU")
-	fullURL := "http://api.edu.cdek.ru/v2/location/suggest/cities" + "?" + params.Encode()
+	fullURL := cdekurl + "/v2/location/suggest/cities" + "?" + params.Encode()
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
 		panic(err)
@@ -745,7 +692,7 @@ func (a *App) OfficesList(name string) []Deliverypoints {
 	params := url.Values{}
 	params.Add("city_code", name)
 	params.Add("country_code", "RU")
-	fullURL := "http://api.edu.cdek.ru/v2/deliverypoints" + "?" + params.Encode()
+	fullURL := cdekurl + "/v2/deliverypoints" + "?" + params.Encode()
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
 		panic(err)
@@ -772,19 +719,30 @@ func (a *App) OfficesList(name string) []Deliverypoints {
 	return offices
 }
 
-func (a *App) Prints(x int64) interface{} {
-	//fmt.Println(x)
-	dsn := "root:secret123@tcp(127.0.0.1:3306)/cdekdb?charset=utf8mb4&parseTime=True&loc=Local"
+func (a *App) LoadZakaz(x int64) interface{} {
+	//var db *sql.DB
+	//var err error
+	//dsn := "root:secret123@tcp(127.0.0.1:3306)/cdekdb?charset=utf8mb4&parseTime=True&loc=Local"
+	//db, err = sql.Open("mysql", dsn)
+	//if err != nil {
+	username := "rcserver_cityrton2"
+	password := "5$QSkS%hntL33o3Ey9aaoqVvOcP4xF"
+	host := "cityron.ru"
+	port := "3306"
+	dbname := "rcserver_cityrton2"
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		username, password, host, port, dbname)
+
+	// открываем соединение
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		log.Fatal("Ошибка при открытии БД:", err)
+		log.Fatal("Ошибка подключения:", err)
 	}
 	defer db.Close()
+
+	//}
 	xx := Zakaz(x, db)
 	fmt.Println(xx)
-	//var xx SkladSklad
-	//xx.Type = 1
-	//fmt.Println(xx.Type)
 	return xx
 }
 

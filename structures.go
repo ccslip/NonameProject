@@ -378,30 +378,20 @@ type SkladSklad struct {
 }
 
 type ZakazDTO struct { //ФОРМА ДЛЯ РАЗМЕЩЕНИЯ ЗАКАЗА
-	Type                 int32   `json:"type"` //Тип заказа.
-	AdditionalOrderTypes []int32 `json:"additional_order_types"`
-	Number               string  `json:"number"` //Номера заказа в ИС Клиента. Только для заказов "интернет-магазин".
-	AccompanyingNumber   string  `json:"accompanying_number"`
-	TariffCode           int32   `json:"tariff_code"`    //Код тарифа
-	Comment              string  `json:"comment"`        //Комментарий к заказу
-	ShipmentPoint        string  `json:"shipment_point"` //Код ПВЗ СДЭК, на который будет производиться самостоятельный привоз клиентом. Обязательное поле, если заказ с тарифом "от склада". Не может использоваться одновременно с from_location
-	//DeliveryPoint            string    `json:"delivery_point,"`
-	DateInvoice              string    `json:"date_invoice"`
-	ShipperName              string    `json:"shipper_name"`
-	ShipperAddress           string    `json:"shipper_address"`
-	DeliveryRecipientCost    Money     `json:"delivery_recipient_cost"`
-	DeliveryRecipientCostAdv []Money1  `json:"delivery_recipient_cost_adv"`
-	Sender                   Recipient `json:"sender"`
-	Seller                   Seller    `json:"seller"`    //Реквизиты истинного продавца
-	Recipient                Recipient `json:"recipient"` //Получатель
-	//FromLocation             FromLocation `json:"from_location"` //Адрес отправления. Заполняется, если тариф "от двери".
-	ToLocation      ToLocation `json:"to_location,omitempty"` //Адрес получения. Заполняется, если тариф "до двери".
-	Packages        []Packages `json:"packages"`              //Список информации по местам (упаковкам). Количество мест в заказе может быть от 1 до 255
-	IsClientReturn  bool       `json:"is_client_return"`      //Признак клиентского возврата
-	HasReverseOrder bool       `json:"has_reverse_order"`     //Признак необходимости создания реверсного заказа
-	DeveloperKey    string     `json:"developer_key"`         //Ключ разработчика
-	Print           string     `json:"print"`                 //Enum: "WAYBILL" "BARCODE" Тип печатной формы, которую необходимо сформировать по заказу
-	WidgetToken     string     `json:"widget_token"`          //Токен CMS, содержащий дополнительные данные
+	Type          int32            `json:"type"`           //Тип заказа.
+	Number        string           `json:"number"`         //Номера заказа в ИС Клиента. Только для заказов "интернет-магазин".
+	TariffCode    int32            `json:"tariff_code"`    //Код тарифа
+	Comment       string           `json:"comment"`        //Комментарий к заказу
+	ShipmentPoint string           `json:"shipment_point"` //Код ПВЗ СДЭК, на который будет производиться самостоятельный привоз клиентом. Обязательное поле, если заказ с тарифом "от склада". Не может использоваться одновременно с from_location
+	DeliveryPoint string           `json:"delivery_point"`
+	Recipient     Recipient        `json:"recipient"`     //Получатель
+	FromLocation  FromLocation     `json:"from_location"` //Адрес отправления. Заполняется, если тариф "от двери".
+	ToLocation    ToLocation       `json:"to_location"`   //Адрес получения. Заполняется, если тариф "до двери".
+	Packages      []Packages       `json:"packages"`      //Список информации по местам (упаковкам). Количество мест в заказе может быть от 1 до 255
+	Print         string           `json:"print"`         //Enum: "WAYBILL" "BARCODE" Тип печатной формы, которую необходимо сформировать по заказу
+	OfficeList    []Deliverypoints `json:"office_list"`
+	TariffList    TariffList       `json:"tariff_list"`
+	City          City             `json:"city"`
 }
 
 type Packages struct {
@@ -488,14 +478,14 @@ type ToLocation struct {
 
 type Recipient struct {
 	Company              string     `json:"company"`
-	Name                 string     `json:"name"` // required
+	Name                 string     `json:"name"` // ФИО контактного лица
 	ContragentType       string     `json:"contragent_type"`
 	PassportSeries       string     `json:"passport_series"`
 	PassportNumber       string     `json:"passport_number"`
-	PassportDateOfIssue  string     `json:"passport_date_of_issue"` // string в формате date
+	PassportDateOfIssue  string     `json:"passport_date_of_issue"`
 	PassportOrganization string     `json:"passport_organization"`
 	Tin                  string     `json:"tin"`
-	PassportDateOfBirth  string     `json:"passport_date_of_birth"` // string в формате date
+	PassportDateOfBirth  string     `json:"passport_date_of_birth"`
 	Email                string     `json:"email"`
 	Phones               []PhoneDto `json:"phones"` // Массив телефонов
 }

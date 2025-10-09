@@ -2,32 +2,35 @@
 import { reactive, watch,ref } from 'vue'
 import { Greet } from '../../wailsjs/go/main/App'
 import { OfficesList } from '../../wailsjs/go/main/App'
-import { Prints } from '../../wailsjs/go/main/App'
+import { LoadZakaz } from '../../wailsjs/go/main/App'
 import { Printm } from '../../wailsjs/go/main/App'
 const deliveryfrom = ref("pvz");
 const deliveryto = ref("pvz");
 const poluchatel=ref("yurik");
+const phone = ref('')
+const isDisabled = ref(true)
+const disableINN = ref(false)
+const disabletolocation = ref(true)
+const selectedItem = ref(null)
+const fio = ref('')
+const inn = ref('')
+const items = ref([])
+const tariffs = ref([])
+const selectedTariff = ref(null)
+
+
 const data = reactive({
-number:0,
-  inn:"",
-  phone:"",
-  name: "",         // значение input
+number:14508,
+  city: "",         // значение input
   offices:"",
   results: [],    // список городов
   selectedCity: null,
 
   officess: [], // список полученных офисов в городе
   selectedOffice: null, // объект выбранного офиса
-  officesResults: [],   // список офисов
+  officesResults: [], 
+  tolocation:null,  // список офисов
 })
-const items = ref([
-  { name: "Товар 1", price: 100, sku: "A001" },
-  { name: "Товар 2", price: 200, sku: "A002" },
-  { name: "Товар 3", price: 300, sku: "A003" }
-])
-const isDisabled = ref(true)
-const selectedItem = ref(null)
-const fio = ref('')
 
 function selectItem1(item) {
   selectedItem.value = item
@@ -36,7 +39,7 @@ function selectItem1(item) {
 let debounceTimeout = null
 
 // поиск города
-watch(() => data.name, (newVal) => {
+watch(() => data.city, (newVal) => {
   if (debounceTimeout) clearTimeout(debounceTimeout)
 
   debounceTimeout = setTimeout(async () => {
@@ -83,10 +86,11 @@ watch(() => data.offices, (newVal) => {
 
 
 async function selectItem(item) {
-  data.name = item.full_name
+  data.city = item.full_name
+ // data.city = item.full_name
   data.selectedCity = item
   data.results = [] // закрыть список городов
-  //data.offices = OfficesList(item.code.toString())
+  data.offices=""
 
   try {
     // загружаем список офисов для выбранного города
@@ -113,13 +117,62 @@ function selectOffice(office) {
   data.offices = office.location.address_full   // вставляем название офиса в input
   data.selectedOffice = office // сохраняем объект офиса
   data.officesResults = []     // закрыть список офисов
+  alert(JSON.stringify(data.selectedOffice))
+}
+
+function changeCity(){
+  isDisabled.value=false
+}
+
+function onChangePoluchatel() {
+  if (poluchatel.value === 'yurik') {
+    disableINN.value=false
+  } else {
+    disableINN.value=true
+  }
+}
+
+function onChangeDeliveryTo(){
+    if (deliveryto.value === 'pvz') {
+    disabletolocation.value=true
+  } else {
+    disabletolocation.value=false
+  }
+
+}
+
+function setTariff(code){
+    const found = tariffs.value.find(t => t.tariff_code === code)
+  if (found) {
+    selectedTariff.value = found
+  }
 }
 
 async function onClick(number) {
   try {
-    const res = await Prints(number)
-    fio.value =  JSON.stringify(res.recipient.name)
-    
+    //alert(deliveryto.value=='pvz')
+    items.value=[]
+    const res = await LoadZakaz(number)
+    fio.value =  res.recipient.name
+    if (res.recipient.contragent_type == "LEGAL_ENTITY"){
+    poluchatel.value="yurik"
+    phone.value=res.recipient.phones[0].number
+    inn.value=res.recipient.tin
+    items.value.push(...res.packages[0].items)
+    tariffs.value.push(...res.tariff_list.tariff_codes)
+    data.city=`${res.city.city}`
+
+    if (res.shipment_point!=="" && res.delivery_point!==""){
+      deliveryfrom.value="pvz"
+      deliveryto.value="pvz"
+      let off=res.office_list.find(item =>
+      item.code==res.delivery_point)
+      data.offices=(off.location.address_full)
+      setTariff(res.tariff_code)
+    }
+    //selectItem(res.city.city)
+    //alert(JSON.stringify(res.city.city))
+    }
   } catch (err) {
     console.error('Ошибка при получении данных:', err)
   }
@@ -157,16 +210,18 @@ async function onClick(number) {
 
 
       <!-- выбор города -->
-      <div class="field"> 
+      <div class="city-input-group"> 
       <input
         :disabled="isDisabled"
-        v-model="data.name"
+        v-model="data.city"
         autocomplete="off"
         class="input"
         type="text"
         placeholder="Введите название города..."
       />
-
+          <button class="city-btn" @click="changeCity">
+    Изменить...
+  </button>
       <div v-if="data.results.length & !isDisabled" class="dropdown">
         <ul>
           <li
@@ -174,7 +229,8 @@ async function onClick(number) {
             :key="item.city_uuid"
             @click="selectItem(item)"
           >
-            {{ item.full_name }} - {{item.code}}
+          <!--  < {{ item.full_name }} - {{item.code}} -->
+            {{ item.full_name }}
           </li>
         </ul>
       </div>
@@ -186,19 +242,19 @@ async function onClick(number) {
 
 <label-group class="radio-poluchatel">
   <label>
-    <input type="radio" value="yurik" v-model="poluchatel" />
+    <input type="radio" value="yurik" v-model="poluchatel" @change="onChangePoluchatel"/>
     Юридическое лицо
   </label>
   <label>
-    <input type="radio" value="fizik" v-model="poluchatel" />
+    <input type="radio" value="fizik" v-model="poluchatel" @change="onChangePoluchatel"/>
     Физическое лицо
   </label>
 </label-group>
 
       <div class="tempinput">
       <input
-      v-if="poluchatel ==='yurik'"
-        v-model="data.inn"
+        :disabled="disableINN"
+        v-model="inn"
         autocomplete="off"
         class="input"
         type="text"
@@ -212,7 +268,7 @@ async function onClick(number) {
         placeholder="Введите ФИО..."
       />
       <input
-        v-model="data.phone"
+        v-model="phone"
         autocomplete="off"
         class="input"
         type="text"
@@ -224,9 +280,10 @@ async function onClick(number) {
     <!-- Список элементов -->
     <div class="items-box">
       <div
-        v-for="(item, index) in items"
+        v-for="(item,index) in items"
         :key="index"
         class="item"
+        :class="{ active: selectedItem === item }"
         @click="selectItem1(item)"
       >
         {{ item.name }}
@@ -235,9 +292,18 @@ async function onClick(number) {
 
     <!-- Редактируемые поля -->
     <div class="inputs-box" v-if="selectedItem">
-      <input v-model="selectedItem.name" type="text" placeholder="Название товара" />
-      <input v-model="selectedItem.price" type="number" placeholder="Цена" />
-      <input v-model="selectedItem.sku" type="text" placeholder="Артикул" />
+  <label class="input-group">
+    Вес, гр
+    <input v-model="selectedItem.weight" type="text" placeholder="Введите вес" />
+  </label>
+
+  <label class="input-group">
+    Объявленная стоимость
+    <input v-model="selectedItem.cost" type="number" placeholder="Введите стоимость" />
+  </label>        <label class="input-group">
+    Количество
+    <input v-model="selectedItem.amount" type="text" placeholder="Введите количество" />
+  </label>
     </div>
   </div>
 
@@ -254,11 +320,11 @@ async function onClick(number) {
 
 <label-group class="radio-from">
   <label>
-    <input type="radio" value="pvz" v-model="deliveryto" />
+    <input type="radio" value="pvz" v-model="deliveryto" @change="onChangeDeliveryTo" />
     До ПВЗ
   </label>
   <label>
-    <input type="radio" value="cour" v-model="deliveryto" />
+    <input type="radio" value="cour" v-model="deliveryto" @change="onChangeDeliveryTo" />
     До двери
   </label>
 </label-group>
@@ -267,6 +333,7 @@ async function onClick(number) {
         
                     <input
         v-if="deliveryfrom ==='cour'" 
+        :disabled="isDisabled"
         v-model="data.offices"
         autocomplete="off"
         class="input"
@@ -276,7 +343,7 @@ async function onClick(number) {
 
 
       <input
-        v-if="deliveryto ==='pvz'" 
+        :disabled="!(deliveryto === 'pvz' && isDisabled === false)"
         v-model="data.offices"
         autocomplete="off"
         class="input"
@@ -297,13 +364,25 @@ async function onClick(number) {
       </div>
 
                   <input
-        v-if="deliveryto ==='cour'" 
-        v-model="data.offices"
+        :disabled="!(deliveryto === 'cour' && isDisabled === false)"
+        v-model="data.tolocation"
         autocomplete="off"
         class="input"
         type="text"
          placeholder="Введите адрес доставки груза получателя"
       />
+
+          <div class="items-box">
+      <div
+        v-for="(item,index) in tariffs"
+        :key="index"
+        class="item"
+        :class="{ active: selectedTariff === item }"
+        @click="selectedTariff = item"
+      >
+        {{ item.tariff_name }} - {{ item.delivery_sum }}
+      </div>
+    </div>
 
 
 
@@ -420,19 +499,24 @@ async function onClick(number) {
   overflow-y: auto;
   padding: 10px;
   background: #fafafa;
+  color: black;
 }
 
 .item {
   padding: 5px;
   margin-bottom: 5px;
-  background: white;
+  background: rgb(255, 255, 255);
   border: 1px solid #eee;
   border-radius: 3px;
   cursor: pointer;
 }
 
 .item:hover {
-  background: #eaeaea;
+  background: #beb9b9;
+}
+.item.active {
+  background: #8edb62;
+  border-color: #e70cb0;
 }
 
 .inputs-box {
@@ -447,6 +531,29 @@ async function onClick(number) {
   border-radius: 3px;
 }
 
+.input-group {
+  display: flex;
+  flex-direction:column;
+  gap: 4px;
+  font-weight: 500;
+  color: #ffffff;
+  
+}
 
+.input-group input {
+  padding: 4px 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  text-align: left; 
+}
+.city-input-group {
+  display: flex;
+  align-items: center;
+  gap: 40px; /* расстояние между полем и кнопкой */
+  width:100%;
+}
 
+.city-input-group .input {
+  flex: 1; /* растягиваем поле, чтобы занимало всё свободное место */
+}
 </style>
