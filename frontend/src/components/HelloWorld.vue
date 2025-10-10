@@ -148,6 +148,21 @@ function setTariff(code){
   }
 }
 
+function filteredTariffs(xxx){
+  if (deliveryfrom.value=='pvz' && deliveryto.value=='pvz'){
+      tariffs.value.push( ...xxx.filter(item => item.delivery_mode=== 4) )
+  }
+    if (deliveryfrom.value=='pvz' && deliveryto.value=='cour'){
+      tariffs.value.push( ...xxx.filter(item => item.delivery_mode=== 3) )
+  }
+      if (deliveryfrom.value=='cour' && deliveryto.value=='cour'){
+      tariffs.value.push( ...xxx.filter(item => item.delivery_mode=== 1) )
+  }
+      if (deliveryfrom.value=='cour' && deliveryto.value=='pvz'){
+      tariffs.value.push( ...xxx.filter(item => item.delivery_mode=== 2) )
+  }
+}
+
 async function onClick(number) {
   try {
     //alert(deliveryto.value=='pvz')
@@ -159,7 +174,8 @@ async function onClick(number) {
     phone.value=res.recipient.phones[0].number
     inn.value=res.recipient.tin
     items.value.push(...res.packages[0].items)
-    tariffs.value.push(...res.tariff_list.tariff_codes)
+    filteredTariffs(res.tariff_list.tariff_codes)
+    //tariffs.value.push(...res.tariff_list.tariff_codes)
     data.city=`${res.city.city}`
 
     if (res.shipment_point!=="" && res.delivery_point!==""){
